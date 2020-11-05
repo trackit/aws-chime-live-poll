@@ -1,0 +1,79 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: aws-chime-live-poll-back
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: us-west-1
+
+plugins:
+  - serverless-dynamodb-local
+  - serverless-offline
+
+package:
+  exclude:
+    - package.json
+    - package-lock.json
+
+functions:
+  create-room:
+    role: lambdaRole
+    handler: api/create-room.handler
+    events:
+      - http:
+          path: /create
+          method: get
+
+custom:
+  dynamodb:
+    stages:
+      - ${self:provider.stage}
+
+resources:
+  Resources:
+    usersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: aws-chime-poll
+        AttributeDefinitions:
+          - AttributeName: room_id
+            AttributeType: S
+          - AttributeName: participant_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: room_id
+            KeyType: HASH
+          - AttributeName: participant_id
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+    lambdaRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: lambdaRoleAwsChime
+
+          - Effect: 'Allow'
+            Action:
+              - 'dynamodb:BatchGetItem'
+              - 'dynamodb:GetItem'
+              - 'dynamodb:Query'
+              - 'dynamodb:Scan'
+              - 'dynamodb:BatchWriteItem'
+              - 'dynamodb:PutItem'
+              - 'dynamodb:UpdateItem'
+            Resource: "*"
